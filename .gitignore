@@ -137,3 +137,53 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+### Python / FastAPI backend ignores
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# SQLite / local DBs
+*.db
+*.sqlite3
+dev.db
+
+# Environments
+.env
+.env.*
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Alembic cache / pyc
+alembic/*.pyc

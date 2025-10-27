@@ -1,0 +1,54 @@
+services:
+  db:
+    build: ./db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tiptrip
+      POSTGRES_PASSWORD: tiptrip
+      POSTGRES_DB: tiptrip_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://tiptrip:tiptrip@db:5432/tiptrip_db
+      # enable dev mode (start with uvicorn --reload) and control migrations
+      DEV: "true"
+      SKIP_MIGRATIONS: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount application code for live edit + migrations + alembic config
+      - ./backend/app:/app/app:rw
+      - ./backend/alembic:/app/alembic:rw
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+
+  frontend:
+    build:
+      context: ./desktop
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./desktop:/app:rw
+      # keep container-installed node_modules (don't overwrite with host's)
+      - frontend_node_modules:/app/node_modules
+    environment:
+      # helpful for file change detection on some host setups (Windows/WSL)
+      CHOKIDAR_USEPOLLING: "true"
+      # prevent the container from attempting to open a browser (xdg-open)
+      BROWSER: "none"
+
+volumes:
+  db_data:
+  frontend_node_modules:

@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+# Create app directory
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm install --silent
+
+# Copy app source
+COPY . .
+
+# Expose Vite default dev port
+EXPOSE 5173
+
+# Use environment variable to control host/port if needed
+ENV NODE_ENV=development
+
+# Start Vite in host mode so it's reachable from host machine/container network
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

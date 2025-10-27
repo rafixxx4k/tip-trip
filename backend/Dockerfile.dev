@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project files as a base; docker-compose mounts ./backend/app over /app/app during dev
+COPY alembic.ini ./
+COPY alembic ./alembic
+COPY app ./app
+
+EXPOSE 8000
+
+# Use the project's start script which runs alembic then uvicorn.
+CMD ["sh", "./app/start.sh"]
