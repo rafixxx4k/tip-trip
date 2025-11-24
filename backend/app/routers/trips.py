@@ -44,12 +44,13 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db), current_user
     Clients must send header: X-User-Hash: <their token/hash>
     """
     hash_id = _generate_hash(db)
-    trip = Trip(title=payload.title, description=payload.description, owner_id=current_user.id, hash_id=hash_id)
+    trip = Trip(title=payload.title, description=payload.description, hash_id=hash_id)
     db.add(trip)
     try:
         # flush so trip.id is available for the association
         db.flush()
-        membership = UserTrip(user_id=current_user.id, trip_id=trip.id, is_owner=True)
+        # create a membership for the creator; nickname can be provided later via membership update
+        membership = UserTrip(user_id=current_user.id, trip_id=trip.id, user_name=payload.user_name)
         db.add(membership)
         db.commit()
     except IntegrityError:
@@ -76,12 +77,8 @@ def list_my_trips(db: Session = Depends(get_db), current_user: User = Depends(ge
 
     Requires X-User-Hash header.
     """
-    # Join against user_trips to find memberships
-    q = db.query(Trip).join(UserTrip, UserTrip.trip_id == Trip.id).filter(UserTrip.user_id == current_user.id)
-    # Include trips where user is owner (in case there is no membership row)
-    q2 = db.query(Trip).filter(Trip.owner_id == current_user.id)
-    # Union the two queries and return distinct trips
-    trips = q.union(q2).all()
+    # Join against user_trips to find memberships (owner field removed)
+    trips = db.query(Trip).join(UserTrip, UserTrip.trip_id == Trip.id).filter(UserTrip.user_id == current_user.id).all()
     return trips
 
 
@@ -92,8 +89,9 @@ def update_trip(hash_id: str, payload: TripUpdate, db: Session = Depends(get_db)
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    # Only owner allowed to update
-    if trip.owner_id is None or trip.owner_id != current_user.id:
+    # owner_id/is_owner removed; allow updates only for members of the trip
+    membership = db.query(UserTrip).filter(UserTrip.trip_id == trip.id, UserTrip.user_id == current_user.id).first()
+    if not membership:
         raise HTTPException(status_code=403, detail="Not authorized to update this trip")
 
     if payload.title is not None:

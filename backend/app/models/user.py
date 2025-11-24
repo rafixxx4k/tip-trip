@@ -10,5 +10,4 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, unique=True, index=True, nullable=False)
     token = Column(String, unique=True, nullable=False)
-    name = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

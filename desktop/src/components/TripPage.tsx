@@ -17,7 +17,7 @@ import { Card, CardContent } from "./ui/card";
 import { CalendarView } from "./CalendarView";
 import { ExpenseView } from "./ExpenseView";
 import { ChatView } from "./ChatView";
-import { storage } from "../lib/storage";
+import { getStoredUser } from "../lib/storage";
 import { api, User } from "../lib/api";
 
 interface TripPageProps {
@@ -28,7 +28,7 @@ interface TripPageProps {
 export function TripPage({ tripId, onBack }: TripPageProps) {
   const [tripName, setTripName] = useState("");
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(getStoredUser()?.id.toString() ?? "");
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,21 +39,12 @@ export function TripPage({ tripId, onBack }: TripPageProps) {
   const loadTripData = async () => {
     try {
       // Get current user ID from storage
-      const storedTrip = storage.getTrip(tripId);
-      if (storedTrip) {
-        setCurrentUserId(storedTrip.userId);
-      }
-
       // Load trip data from API
       const { trip, users: tripUsers } =
         await api.getTrip(tripId);
       setTripName(trip.name);
       setUsers(tripUsers);
 
-      // Update storage with latest trip name
-      if (storedTrip && trip.name !== storedTrip.tripName) {
-        storage.updateTripName(tripId, trip.name);
-      }
     } catch (error) {
       console.error("Failed to load trip:", error);
     } finally {

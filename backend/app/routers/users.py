@@ -5,7 +5,7 @@ from typing import List
 import uuid
 
 from app.db.session import get_db
-from app.schemas.users import UserCreate, UserRead
+from app.schemas.users import UserRead
 from app.models.user import User
 
 router = APIRouter()
@@ -29,10 +29,10 @@ def _gen_unique_user_fields(db: Session):
 
 
 @router.post("/users", response_model=UserRead)
-def create_user(payload: UserCreate, db: Session = Depends(get_db)):
-    # Clients send only `name`; generate user_id and token server-side
+def create_user(db: Session = Depends(get_db)):
+    # Clients do not need to provide any payload. Generate user_id and token server-side.
     user_id, token = _gen_unique_user_fields(db)
-    user = User(user_id=user_id, token=token, name=payload.name)
+    user = User(user_id=user_id, token=token)
     db.add(user)
     try:
         db.commit()

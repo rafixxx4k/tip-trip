@@ -4,14 +4,14 @@ from typing import Optional
 
 class UserTripCreate(BaseModel):
     user_hash: str
-    is_owner: Optional[bool] = False
+    user_name: str
 
 
 class UserTripRead(BaseModel):
     id: int
     user_id: int
     trip_id: int
-    is_owner: bool
+    user_name: str
 
     class Config:
         orm_mode = True

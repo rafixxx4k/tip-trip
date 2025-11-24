@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -11,7 +11,7 @@ class UserTrip(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
-    is_owner = Column(Boolean(), nullable=False, default=False)
+    user_name = Column(String(128), nullable=False)
 
     # optional relationships for convenience
     # define them as backrefs are not declared here to avoid import cycles

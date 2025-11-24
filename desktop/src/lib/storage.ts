@@ -1,3 +1,25 @@
+export type StoredUser = {
+  id: number;
+  user_id: string;
+  token: string;
+  // name?: string | null;
+  created_at: string;
+};
+
+const USER_KEY = "tiptrip_user";
+
+export function getStoredUser(): StoredUser | null {
+  const raw = localStorage.getItem(USER_KEY);
+  return raw ? (JSON.parse(raw) as StoredUser) : null;
+}
+
+export function setStoredUser(user: StoredUser) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearStoredUser() {
+  localStorage.removeItem(USER_KEY);
+}
 // Local storage utilities for managing trip data client-side
 
 export interface StoredTrip {

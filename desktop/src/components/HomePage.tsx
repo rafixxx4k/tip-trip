@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { storage, StoredTrip } from '../lib/storage';
+import { storage, StoredTrip, getStoredUser } from '../lib/storage';
 import { api } from '../lib/api';
 
 interface HomePageProps {
@@ -17,6 +17,7 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createName, setCreateName] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [joinTripId, setJoinTripId] = useState('');
   const [joinDisplayName, setJoinDisplayName] = useState('');
@@ -31,12 +32,14 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
     
     setIsLoading(true);
     try {
-      const { tripId, userId } = await api.createTrip(createName, displayName);
+      const { tripId, tripName } = await api.createTrip(createName, displayName, createDescription);
+      const storedUser = getStoredUser();
+      const userId = storedUser ? String(storedUser.id) : '';
       
       const newTrip: StoredTrip = {
         tripId,
-        tripName: createName,
-        userId,
+        tripName: tripName || createName,
+        userId: userId ?? '',
         displayName,
         joinedAt: new Date().toISOString()
       };
@@ -45,6 +48,7 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
       setTrips(storage.getTrips());
       setShowCreateDialog(false);
       setCreateName('');
+      setCreateDescription('');
       setDisplayName('');
       onNavigateToTrip(tripId);
     } catch (error) {
@@ -187,6 +191,15 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
                 placeholder="e.g., Paris 2026"
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tripDescription">Description</Label>
+              <Input
+                id="tripDescription"
+                placeholder="Short trip description"
+                value={createDescription}
+                onChange={(e) => setCreateDescription(e.target.value)}
               />
             </div>
             <div>

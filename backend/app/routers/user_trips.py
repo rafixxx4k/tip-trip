@@ -43,9 +43,16 @@ def add_member(hash_id: str, payload: UserTripCreate, db: Session = Depends(get_
     user = get_user_by_token(db, payload.user_hash)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Allow anyone to add themselves if they present their own user_hash (i.e. they are the caller).
+    # Adding other users still requires the caller to be a member of the trip.
+    adding_self = payload.user_hash == current_user.token
+    if not adding_self:
+        caller_membership = db.query(UserTrip).filter(UserTrip.trip_id == trip.id, UserTrip.user_id == current_user.id).first()
+        if not caller_membership:
+            raise HTTPException(status_code=403, detail="Only trip members may add other members")
 
-    # create membership
-    membership = UserTrip(user_id=user.id, trip_id=trip.id, is_owner=bool(payload.is_owner))
+    # create membership with optional nickname
+    membership = UserTrip(user_id=user.id, trip_id=trip.id, user_name=payload.user_name)
     db.add(membership)
     try:
         db.commit()
@@ -65,10 +72,9 @@ def remove_member(hash_id: str, user_id: int, db: Session = Depends(get_db), cur
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    # only owner or the user themself may remove
-    owner_membership = db.query(UserTrip).filter(UserTrip.trip_id == trip.id, UserTrip.user_id == current_user.id, UserTrip.is_owner == True).first()
-    if not owner_membership and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to remove this member")
+    # With owner flag removed only the user themself may remove their membership.
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Only the user themself may remove their membership")
 
     db.delete(membership)
     db.commit()
@@ -84,12 +90,11 @@ def update_member(hash_id: str, user_id: int, payload: UserTripCreate, db: Sessi
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
-    # only owner may change membership roles
-    owner_membership = db.query(UserTrip).filter(UserTrip.trip_id == trip.id, UserTrip.user_id == current_user.id, UserTrip.is_owner == True).first()
-    if not owner_membership:
-        raise HTTPException(status_code=403, detail="Only owner may modify memberships")
+    # Users may update their own nickname; only allow that.
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Only the user themself may modify their membership")
 
-    membership.is_owner = bool(payload.is_owner)
+    membership.user_name = payload.user_name
     db.add(membership)
     db.commit()
     db.refresh(membership)
