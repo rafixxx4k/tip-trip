@@ -28,6 +28,10 @@ export interface StoredTrip {
   userId: string;
   displayName: string;
   joinedAt: string;
+  // optional persisted metadata
+  date_start?: string | null;
+  date_end?: string | null;
+  allowed_weekdays?: number[] | null;
 }
 
 const STORAGE_KEY = 'tripPlanner_trips';
@@ -67,6 +71,21 @@ export const storage = {
     const trip = trips.find(t => t.tripId === tripId);
     if (trip) {
       trip.tripName = tripName;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+    }
+  }
+  ,
+  
+  // Update arbitrary trip metadata (name, displayName, dates)
+  updateTripMeta(tripId: string, updates: Partial<StoredTrip>): void {
+    const trips = this.getTrips();
+    const trip = trips.find(t => t.tripId === tripId);
+    if (trip) {
+      if (updates.tripName !== undefined) trip.tripName = updates.tripName;
+      if (updates.displayName !== undefined) trip.displayName = updates.displayName;
+      if (updates.date_start !== undefined) trip.date_start = updates.date_start ?? null;
+      if (updates.date_end !== undefined) trip.date_end = updates.date_end ?? null;
+      if (updates.allowed_weekdays !== undefined) trip.allowed_weekdays = updates.allowed_weekdays ?? null;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
     }
   }

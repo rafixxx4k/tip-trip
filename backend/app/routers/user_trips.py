@@ -7,6 +7,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.trip import Trip
 from app.models.user_trip import UserTrip
+from app.models.trip_date import TripDate
+from app.models.user_availability import UserAvailability
 from app.schemas.user_trips import UserTripCreate, UserTripRead
 
 router = APIRouter()
@@ -60,6 +62,18 @@ def add_member(hash_id: str, payload: UserTripCreate, db: Session = Depends(get_
         db.rollback()
         raise HTTPException(status_code=400, detail="User is already a member of the trip")
     db.refresh(membership)
+    # After adding membership, ensure availability rows exist for this user for all trip dates
+    try:
+        trip_dates = db.query(TripDate).filter(TripDate.trip_id == trip.id).all()
+        for td in trip_dates:
+            exists = db.query(UserAvailability).filter(UserAvailability.trip_date_id == td.id, UserAvailability.user_id == user.id).first()
+            if not exists:
+                ua = UserAvailability(trip_date_id=td.id, user_id=user.id, status='unset')
+                db.add(ua)
+        db.commit()
+    except Exception:
+        db.rollback()
+        # do not fail the membership creation if availability setup fails
     return membership
 
 

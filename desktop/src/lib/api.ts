@@ -43,6 +43,9 @@ export interface Trip {
   name: string;
   organizerUserId: string;
   createdAt: string;
+  date_start?: string | null;
+  date_end?: string | null;
+  allowed_weekdays?: number[] | null;
 }
 
 export interface User {
@@ -56,7 +59,7 @@ export interface Availability {
   tripId: string;
   userId: string;
   date: string;
-  status: 'available' | 'unavailable' | 'maybe';
+  status: 'available' | 'unavailable' | 'maybe' | 'unset';
 }
 
 export interface Debtor {
@@ -133,12 +136,15 @@ export const api = {
     }
     const tripData = await tripRes.json();
 
-    // Normalize trip
+    // Normalize trip (include date fields returned by backend)
     const trip: Trip = {
       id: tripData.hash_id ?? tripId,
       name: tripData.title ?? tripData.name ?? '',
       organizerUserId: String(tripData.owner_id ?? ''),
       createdAt: tripData.created_at ?? new Date().toISOString(),
+      date_start: tripData.date_start ?? null,
+      date_end: tripData.date_end ?? null,
+      allowed_weekdays: tripData.allowed_weekdays ?? null,
     };
 
     // Fetch members
@@ -176,14 +182,17 @@ export const api = {
   },
 
   async updateTrip(tripId: string, userId: string, updates: Partial<Trip>): Promise<{ status: string }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, ...updates })
-    // });
-    // return response.json();
-    
+    const body = { ...updates } as any;
+    const res = await authFetch(`${BASE}/trips/${tripId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`updateTrip failed: ${res.status} ${txt}`);
+    }
+    const data = await res.json();
     return { status: 'success' };
   },
 
@@ -191,16 +200,18 @@ export const api = {
   async submitAvailability(
     tripId: string,
     userId: string,
-    dates: Array<{ date: string; status: 'available' | 'unavailable' | 'maybe' }>
+    dates: Array<{ date: string; status: 'available' | 'unavailable' | 'maybe' | 'unset' }>
   ): Promise<{ status: string }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/availability`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, dates })
-    // });
-    // return response.json();
-    
+    const payload = { updates: dates.map(d => ({ date: d.date, status: d.status })) };
+    const res = await authFetch(`${BASE}/trips/${tripId}/availability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`submitAvailability failed: ${res.status} ${txt}`);
+    }
     return { status: 'success' };
   },
 
@@ -209,28 +220,14 @@ export const api = {
     users: User[];
     availability: Record<string, Record<string, 'available' | 'unavailable' | 'maybe' | null>>;
   }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/calendar`);
-    // return response.json();
-    
-    // Mock implementation
-    const dates = ['2025-11-01', '2025-11-02', '2025-11-03', '2025-11-04', '2025-11-05'];
-    const users = [
-      { id: 'user1', tripId, displayName: 'Alex' },
-      { id: 'user2', tripId, displayName: 'Jordan' }
-    ];
-    const availability: Record<string, Record<string, 'available' | 'unavailable' | 'maybe' | null>> = {
-      'user1': {
-        '2025-11-01': 'available',
-        '2025-11-02': 'available',
-        '2025-11-03': 'maybe',
-      },
-      'user2': {
-        '2025-11-01': 'available',
-        '2025-11-04': 'unavailable',
-      }
-    };
-    return { dates, users, availability };
+    const res = await authFetch(`${BASE}/trips/${tripId}/calendar`);
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`getCalendar failed: ${res.status} ${txt}`);
+    }
+    const data = await res.json();
+    const users: User[] = (data.users || []).map((u: any) => ({ id: String(u.id), tripId, displayName: u.displayName }));
+    return { dates: data.dates || [], users, availability: data.availability || {} };
   },
 
   // Expense Splitting

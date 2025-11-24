@@ -18,6 +18,9 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createName, setCreateName] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createDateStart, setCreateDateStart] = useState('');
+  const [createDateEnd, setCreateDateEnd] = useState('');
+  const [createWeekdays, setCreateWeekdays] = useState<number[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [joinTripId, setJoinTripId] = useState('');
   const [joinDisplayName, setJoinDisplayName] = useState('');
@@ -33,6 +36,16 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
     setIsLoading(true);
     try {
       const { tripId, tripName } = await api.createTrip(createName, displayName, createDescription);
+      // If user provided date edges or weekdays, update the trip to set them
+      try {
+        if (createDateStart && createDateEnd) {
+          const updates: any = { date_start: createDateStart, date_end: createDateEnd };
+          if (createWeekdays && createWeekdays.length > 0) updates.allowed_weekdays = createWeekdays;
+          await api.updateTrip(tripId, '', updates);
+        }
+      } catch (err) {
+        console.warn('Failed to set trip dates after creation', err);
+      }
       const storedUser = getStoredUser();
       const userId = storedUser ? String(storedUser.id) : '';
       
@@ -210,6 +223,36 @@ export function HomePage({ onNavigateToTrip }: HomePageProps) {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="dateStart">Start Date (optional)</Label>
+                <Input id="dateStart" type="date" value={createDateStart} onChange={e => setCreateDateStart(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="dateEnd">End Date (optional)</Label>
+                <Input id="dateEnd" type="date" value={createDateEnd} onChange={e => setCreateDateEnd(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <Label>Allowed Weekdays (optional)</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, idx) => {
+                  const selected = createWeekdays.includes(idx);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setCreateWeekdays(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx])}
+                      className={`px-2 py-1 rounded border ${selected ? 'bg-blue-600 text-white' : 'bg-white'}`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <DialogFooter>
