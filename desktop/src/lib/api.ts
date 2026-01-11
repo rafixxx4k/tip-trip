@@ -302,18 +302,15 @@ export const api = {
 
   // AI Chat Agent
   async sendChatMessage(tripId: string, userId: string, message: string): Promise<{ response: string }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/chat`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, message })
-    // });
-    // return response.json();
-    
-    // Mock implementation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return {
-      response: `I'm your AI travel assistant! You asked: "${message}". Once connected to the backend, I'll provide personalized recommendations for your trip.`
-    };
+    const res = await authFetch(`${BASE}/trips/${tripId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`sendChatMessage failed: ${res.status} ${txt}`);
+    }
+    return await res.json();
   }
 };

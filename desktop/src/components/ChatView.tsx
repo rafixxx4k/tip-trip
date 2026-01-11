@@ -65,10 +65,11 @@ export function ChatView({ tripId, currentUserId }: ChatViewProps) {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
+      const errorText = error instanceof Error ? error.message : String(error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Sorry, I encountered an error: ${errorText}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
