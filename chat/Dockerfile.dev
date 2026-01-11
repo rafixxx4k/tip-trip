@@ -1,0 +1,12 @@
+# Dockerfile.ollama
+# Use the official Ollama image as the base
+FROM ollama/ollama:latest
+
+# Define the model you want to pull (e.g., the small 2B parameter Gemma)
+# ENV MODEL_NAME=gemma:2b
+
+# Run the pull command during the build process
+# This bakes the model into the image layer, making it instantly available at runtime.
+# RUN ollama serve
+
+# The default entrypoint will still start the Ollama server
