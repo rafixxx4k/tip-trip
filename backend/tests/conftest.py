@@ -22,20 +22,39 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 # Workaround for SQLite not supporting ARRAY type
-# We'll modify the Trip model's allowed_weekdays column for SQLite
+import json
+from sqlalchemy.types import TypeDecorator, String as SQLString
+from sqlalchemy.dialects.postgresql import ARRAY
+
+
+class JSONEncodedArray(TypeDecorator):
+    """Converts ARRAY to JSON string for SQLite."""
+
+    impl = SQLString
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return None
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return json.loads(value)
+        return None
+
+
 @event.listens_for(Trip.__table__, "before_create", propagate=True)
 def _set_sqlite_pragma(target, connection, **kw):
-    """Handle ARRAY columns for SQLite by making them TEXT"""
+    """Handle ARRAY columns for SQLite by converting to JSON string"""
     if connection.dialect.name == "sqlite":
-        from sqlalchemy import String
-
-        # Change ARRAY column to String for SQLite testing
         for column in target.columns:
-            if column.name == "allowed_weekdays" and hasattr(
-                column.type, "__visit_name__"
-            ):
-                if column.type.__visit_name__ == "ARRAY":
-                    column.type = String()
+            if column.name == "allowed_weekdays":
+                if (
+                    hasattr(column.type, "__visit_name__")
+                    and column.type.__visit_name__ == "ARRAY"
+                ):
+                    column.type = JSONEncodedArray()
 
 
 @pytest.fixture(scope="function")
