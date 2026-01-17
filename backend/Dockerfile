@@ -10,5 +10,6 @@ COPY alembic ./alembic
 EXPOSE 8000
 
 # Use a small startup script which runs migrations then launches uvicorn
-RUN chmod +x ./app/start.sh || true
-CMD ["sh", "./app/start.sh"]
+RUN sed -i 's/\r$//' ./app/start.sh && chmod +x ./app/start.sh || true
+SHELL ["sh", "-c"]
+CMD sed -i 's/\r$//' ./app/start.sh && exec sh ./app/start.sh

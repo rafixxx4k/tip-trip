@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
@@ -16,6 +18,15 @@ interface Message {
   content: string;
   timestamp: Date;
 }
+
+const markdownComponents = {
+  p: (props: any) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words" {...props} />,
+  ul: (props: any) => <ul className="mb-2 last:mb-0 list-disc pl-5 space-y-1" {...props} />,
+  ol: (props: any) => <ol className="mb-2 last:mb-0 list-decimal pl-5 space-y-1" {...props} />,
+  li: (props: any) => <li className="leading-relaxed" {...props} />,
+  strong: (props: any) => <strong className="font-semibold" {...props} />,
+  em: (props: any) => <em className="italic" {...props} />,
+};
 
 export function ChatView({ tripId, currentUserId }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([
@@ -65,10 +76,11 @@ export function ChatView({ tripId, currentUserId }: ChatViewProps) {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
+      const errorText = error instanceof Error ? error.message : String(error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Sorry, I encountered an error: ${errorText}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -112,7 +124,13 @@ export function ChatView({ tripId, currentUserId }: ChatViewProps) {
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={markdownComponents}
+                    className="text-sm leading-relaxed"
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                   <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>

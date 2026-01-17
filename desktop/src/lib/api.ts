@@ -239,81 +239,48 @@ export const api = {
     currency: string,
     debtors: Debtor[]
   ): Promise<{ expenseId: string }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/expenses`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, amount, description, currency, debtors })
-    // });
-    // return response.json();
-    
-    const expenseId = Math.random().toString(36).substring(2, 15);
-    return { expenseId };
+    const response = await authFetch(`${BASE}/trips/${tripId}/expenses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, description, currency, debtors })
+    });
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(`createExpense failed: ${response.status} ${txt}`);
+    }
+    const data = await response.json();
+    return { expenseId: data.id };
   },
 
   async getExpenses(tripId: string): Promise<Expense[]> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/expenses`);
-    // return response.json();
-    
-    // Mock implementation
-    return [
-      {
-        id: 'exp1',
-        tripId,
-        payerId: 'user1',
-        amount: 120,
-        currency: 'USD',
-        description: 'Hotel booking',
-        isSplitEqually: true,
-        debtors: [
-          { userId: 'user1', shareType: 'equal', value: 60 },
-          { userId: 'user2', shareType: 'equal', value: 60 }
-        ]
-      },
-      {
-        id: 'exp2',
-        tripId,
-        payerId: 'user2',
-        amount: 45,
-        currency: 'USD',
-        description: 'Dinner',
-        isSplitEqually: true,
-        debtors: [
-          { userId: 'user1', shareType: 'equal', value: 22.5 },
-          { userId: 'user2', shareType: 'equal', value: 22.5 }
-        ]
-      }
-    ];
+    const response = await authFetch(`${BASE}/trips/${tripId}/expenses`);
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(`getExpenses failed: ${response.status} ${txt}`);
+    }
+    return await response.json();
   },
 
   async getSettlements(tripId: string): Promise<{ balances: Settlement[] }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/settlements`);
-    // return response.json();
-    
-    // Mock implementation
-    return {
-      balances: [
-        { fromUser: 'user2', toUser: 'user1', amount: 37.5, currency: 'USD' }
-      ]
-    };
+    const response = await authFetch(`${BASE}/trips/${tripId}/settlements`);
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(`getSettlements failed: ${response.status} ${txt}`);
+    }
+    return await response.json();
   },
 
   // AI Chat Agent
   async sendChatMessage(tripId: string, userId: string, message: string): Promise<{ response: string }> {
-    // TODO: Implement actual API call
-    // const response = await fetch(`${BASE_URL}/trips/${tripId}/chat`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ userId, message })
-    // });
-    // return response.json();
-    
-    // Mock implementation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return {
-      response: `I'm your AI travel assistant! You asked: "${message}". Once connected to the backend, I'll provide personalized recommendations for your trip.`
-    };
+    const res = await authFetch(`${BASE}/trips/${tripId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`sendChatMessage failed: ${res.status} ${txt}`);
+    }
+    return await res.json();
   }
 };

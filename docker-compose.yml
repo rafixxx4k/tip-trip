@@ -34,6 +34,8 @@ services:
       - ./backend/app:/app/app:rw
       - ./backend/alembic:/app/alembic:rw
       - ./backend/alembic.ini:/app/alembic.ini:ro
+      - ./backend/tests:/app/tests:rw
+      - ./backend/pytest.ini:/app/pytest.ini:ro
 
   frontend:
     build:

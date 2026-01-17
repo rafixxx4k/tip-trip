@@ -14,4 +14,6 @@ COPY app ./app
 EXPOSE 8000
 
 # Use the project's start script which runs alembic then uvicorn.
-CMD ["sh", "./app/start.sh"]
+RUN sed -i 's/\r$//' ./app/start.sh && chmod +x ./app/start.sh || true
+SHELL ["sh", "-c"]
+CMD sed -i 's/\r$//' ./app/start.sh && exec sh ./app/start.sh
